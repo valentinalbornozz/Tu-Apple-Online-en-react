@@ -11,7 +11,7 @@
         },
         {
             "src": "/.*\\.jsx",
-            "contentType": "text/javascript"
+            "dest": "/index.html"
         },
         {
             "src": "/.*",
