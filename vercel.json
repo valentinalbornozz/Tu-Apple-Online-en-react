@@ -1,21 +1,6 @@
 {
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ],
-    "routes": [
-        {
-            "handle": "filesystem"
-        },
-        {
-            "src": "/.*\\.jsx",
-            "dest": "/index.html"
-        },
-        {
-            "src": "/.*",
-            "dest": "/index.html"
-        }
-    ]
+    "scripts": {
+        "build": "vite build",
+        "preview": "vite preview"
+    }
 }
