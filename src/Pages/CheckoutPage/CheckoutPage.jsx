@@ -29,23 +29,19 @@ function CheckoutPage() {
   //Iniciamos useStripe y useElements
   const stripe = useStripe();
   const elements = useElements();
-
-  // Seleccione los elementos del carrito desde Redux
+  // Selecciona los elementos del carrito desde Redux
   const cartItems = useSelector((state) => state.cart);
   const totalPrice = getTotalPrice(cartItems);
-
   // Verifica si el usuario está autenticado
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   // Muestra mensajes de éxito y error
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
-  // Controla la visualización del botón de "Cargando"
+  // Controla la visualización del botón de "Cargando" y el mensaje de error
   const [loading, setLoading] = useState(false);
-
+  const [messageVisible, setMessageVisible] = useState(true);
   // Almacena los datos de la orden (nombre, apellido, correo, dirección, teléfono y carrito de compras)
   const [orderData, setOrderData] = useState({
     firstName: "",
@@ -55,11 +51,10 @@ function CheckoutPage() {
     phone: "",
     cart: cartItems,
   });
-
   // Redirige al usuario si no está autenticado
   if (!isAuthenticated) {
     navigate("/inicio");
-    return;
+    return null;
   }
   // Maneja cambios en los campos del formulario
   const handleInputChange = (event) => {
@@ -69,7 +64,7 @@ function CheckoutPage() {
       [name]: value,
     });
   };
-  // Maneja el proceso de pago
+
   const handlePayment = async (event) => {
     event.preventDefault();
 
@@ -80,7 +75,6 @@ function CheckoutPage() {
     const cardElement = elements.getElement(CardElement);
 
     setLoading(true);
-
     // Valida que todos los campos obligatorios estén llenos
     if (
       !orderData.firstName ||
@@ -90,9 +84,13 @@ function CheckoutPage() {
       !orderData.phone
     ) {
       setErrorMessage("Por favor, complete todos los campos.");
+      setLoading(false);
+      setTimeout(() => {
+        setErrorMessage("");
+        setMessageVisible(false);
+      }, 5000);
       return;
     }
-
     // Crea un cliente de Stripe y obtiene un token de tarjeta
     const { token, error } = await stripe.createToken(cardElement);
 
@@ -102,6 +100,10 @@ function CheckoutPage() {
         "Hubo un problema al procesar su tarjeta. Por favor, inténtelo de nuevo."
       );
       setLoading(false);
+      setTimeout(() => {
+        setErrorMessage("");
+        setMessageVisible(false);
+      }, 5000);
     } else {
       // Datos de la orden
       const order = {
@@ -114,7 +116,6 @@ function CheckoutPage() {
         totalAmount: totalPrice,
         cart: cartItems,
       };
-
       // Enviar los datos de la orden al backend para su procesamiento
       try {
         const response = await fetch(
@@ -131,28 +132,41 @@ function CheckoutPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            // Mostrar mensaje de éxito
             setSuccessMessage(
+              // Mostrar mensaje de éxito
               "¡Pago exitoso! Redirigiendo a la página de confirmación..."
             );
-
             // Redirige al usuario a la página de confirmación y lo deja por 5 segundos
             setTimeout(() => {
               navigate(data.confirmationUrl);
             }, 5000);
-
             // Limpia el carrito después de 10 segundos
             setTimeout(() => {
               dispatch(clearCart());
               navigate("/inicio");
             }, 10000);
+          } else {
+            // Mostrar menensaje de error
+            setErrorMessage("No se pudo procesar el pago. Inténtelo de nuevo.");
+            setLoading(false);
+            // El mensaje desaparece despues de 3 segundos
+            setTimeout(() => {
+              setErrorMessage("");
+              setMessageVisible(false);
+            }, 3000);
           }
         }
       } catch (error) {
         setErrorMessage("Hubo un problema al procesar su pedido.");
+        setLoading(false);
+        setTimeout(() => {
+          setErrorMessage("");
+          setMessageVisible(false);
+        }, 5000);
       }
     }
   };
+
   const cardStyle = {
     base: {
       fontSize: "16px",
@@ -160,6 +174,7 @@ function CheckoutPage() {
       marginBottom: "25px",
     },
   };
+
   return (
     <Container className="pay-container">
       <Row>
@@ -263,12 +278,12 @@ function CheckoutPage() {
                   placeholder="Ingrese los detalles de su tarjeta"
                 />
               </Form.Group>
-              {successMessage && (
+              {successMessage && messageVisible && (
                 <Alert variant="dark" className="mt-3 text-bg-dark">
                   {successMessage}
                 </Alert>
               )}
-              {errorMessage && (
+              {errorMessage && messageVisible && (
                 <Alert variant="dark" className="mt-3 text-bg-dark">
                   {errorMessage}
                 </Alert>
@@ -277,7 +292,7 @@ function CheckoutPage() {
                 variant="primary"
                 type="submit"
                 className="button-submit"
-                disabled={loading} // Desactivar el botón cuando está cargando
+                disabled={loading} // Desactiva el botón cuando está cargando
               >
                 {loading ? (
                   <>
