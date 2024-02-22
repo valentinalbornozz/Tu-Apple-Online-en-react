@@ -39,9 +39,8 @@ function CheckoutPage() {
   // Muestra mensajes de éxito y error
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  // Controla la visualización del botón de "Cargando" y el mensaje de error
+  // Controla la visualización del botón de "Cargando"
   const [loading, setLoading] = useState(false);
-  const [messageVisible, setMessageVisible] = useState(true);
   // Almacena los datos de la orden (nombre, apellido, correo, dirección, teléfono y carrito de compras)
   const [orderData, setOrderData] = useState({
     firstName: "",
@@ -87,7 +86,6 @@ function CheckoutPage() {
       setLoading(false);
       setTimeout(() => {
         setErrorMessage("");
-        setMessageVisible(false);
       }, 5000);
       return;
     }
@@ -102,10 +100,8 @@ function CheckoutPage() {
       setLoading(false);
       setTimeout(() => {
         setErrorMessage("");
-        setMessageVisible(false);
       }, 5000);
     } else {
-      // Datos de la orden
       const order = {
         firstName: orderData.firstName,
         lastName: orderData.lastName,
@@ -116,7 +112,7 @@ function CheckoutPage() {
         totalAmount: totalPrice,
         cart: cartItems,
       };
-      // Enviar los datos de la orden al backend para su procesamiento
+      // Envia los datos de la orden al backend para su procesamiento
       try {
         const response = await fetch(
           "https://bakend-tu-apple-online.vercel.app/procesar_pago",
@@ -133,26 +129,25 @@ function CheckoutPage() {
           const data = await response.json();
           if (data.success) {
             setSuccessMessage(
-              // Mostrar mensaje de éxito
               "¡Pago exitoso! Redirigiendo a la página de confirmación..."
             );
-            // Redirige al usuario a la página de confirmación y lo deja por 5 segundos
+            // Aquí redirigimos al usuario después del éxito del pago durante 5 minutos
             setTimeout(() => {
               navigate(data.confirmationUrl);
             }, 5000);
-            // Limpia el carrito después de 10 segundos
+            //Aquí redirigimos al usuario despues de mostrarle confirmación al inicio y se borra el carrito automaticamente despues de 10 segundos
             setTimeout(() => {
               dispatch(clearCart());
               navigate("/inicio");
             }, 10000);
           } else {
             // Mostrar menensaje de error
-            setErrorMessage("No se pudo procesar el pago. Inténtelo de nuevo.");
+            setErrorMessage(
+              "No se pudo procesar el pago. Inténtelo de nuevo con otra tarjeta."
+            );
             setLoading(false);
-            // El mensaje desaparece despues de 3 segundos
             setTimeout(() => {
               setErrorMessage("");
-              setMessageVisible(false);
             }, 3000);
           }
         }
@@ -161,8 +156,7 @@ function CheckoutPage() {
         setLoading(false);
         setTimeout(() => {
           setErrorMessage("");
-          setMessageVisible(false);
-        }, 5000);
+        }, 3000);
       }
     }
   };
@@ -278,13 +272,13 @@ function CheckoutPage() {
                   placeholder="Ingrese los detalles de su tarjeta"
                 />
               </Form.Group>
-              {successMessage && messageVisible && (
-                <Alert variant="dark" className="mt-3 text-bg-dark">
+              {successMessage && (
+                <Alert variant="success" className="mt-3 text-bg-dark">
                   {successMessage}
                 </Alert>
               )}
-              {errorMessage && messageVisible && (
-                <Alert variant="dark" className="mt-3 text-bg-dark">
+              {errorMessage && (
+                <Alert variant="danger" className="mt-3 text-bg-dark">
                   {errorMessage}
                 </Alert>
               )}
